@@ -17,10 +17,11 @@
                 Descripción del Movimiento
             </label>
 
-            <select name="Descrpción" id="Descrpción">
-                 <option value="Ban.Ingreso"> Ingreso proveniente del Banco</option>
-                 <option value="Ban.Retiro">Retiro hacia el banco </option>
-                 <option value="Viaticos">Viaticos</option>
+            <select name="Descrpción" id="Descrpción" onchange="showDiv(this)">
+                 <option value="Ban.Ingreso"> Depósito de banco a caja</option>
+                 <option value="Ban.Retiro">Retiro de caja a banco </option>
+                 <option value="Viaticos">Gastos</option>
+                 <option value="Compras">Compras</option>
             </select>
 
             <label class="block text-gray-700 text-sm font-bold mb-2" for="amount">
@@ -33,7 +34,39 @@
                 Núm. Recibo
             </label>
             <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight border rounded-md border-gray-500 focus:outline-none focus:shadow-outline" name="Núm. Recibo" id="Núm. Recibo"  required placeholder="Núm. Recibo">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="amount">
+               Descripción
+            </label>
+            <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight border rounded-md border-gray-500 focus:outline-none focus:shadow-outline" name="Detalle" id="Detalle"  required placeholder="Detalle">
         </div>
+
+
+        <div class="mb-4"  id="hidden_div" style="display:none;" >
+             <label class="block text-gray-700 text-sm font-bold mb-2" for="amount">
+                Si se realiza una compra, se debe rellenar los siguientes campos para ingresar el inventario.
+         </label>
+        <label class="block text-gray-700 text-sm font-bold mb-2" for="amount">
+               Código
+            </label>
+
+            <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight border rounded-md border-gray-500 focus:outline-none focus:shadow-outline" name="Código" id="Código"   placeholder="Código">
+
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="amount">
+                Descripción del Articulo
+            </label>
+            <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight border rounded-md border-gray-500 focus:outline-none focus:shadow-outline" name="Descripción_1" id="Descripción_1"   placeholder="Descripción">
+
+        </div>
+<script type="text/javascript">
+function showDiv(select){
+   if(select.value=="Compras"){
+    document.getElementById('hidden_div').style.display = "block";
+   } else{
+    document.getElementById('hidden_div').style.display = "none";
+   }
+}
+</script>
+
         {% if messages %}
             <ul class="messages">
             {% for message in messages %}

@@ -13,9 +13,7 @@ from prestamos.utils import render_to_pdf
 from caja.models import Caja
 
 def Prestamos(request):
-    if Temp_Datos_prestamos.objects.all().count()>0:
-        messages.error(request,'Se está ejecutando otro prestamo')
-        return  render(request,'transactions/Index.html')
+
 
     if request.method=="POST":
         if validacion_datos(request):
@@ -39,7 +37,7 @@ def Prestamos(request):
 
 
 class Inicio(TemplateView):
-    Temp_Datos_prestamos.objects.all().delete()
+
     template_name='transactions/Index.html'
 
 def validacion_datos(request):
@@ -276,11 +274,18 @@ class GeneratePdf(View):
 
 
 def Guardar(request):
-
     num_prestamos = Datos_prestamos.objects.all().count()
-    id_presta = num_prestamos+1
+    id_presta = num_prestamos + 1
     info = Temp_Datos_prestamos.objects.filter(Usuario=request.user.username)
     prest = info[0]
+    ahorros = Libro_Mayor.objects.filter(Cuenta="Capital_e_intereses_en_ahorros").last().Cuadre
+    caja = Libro_Mayor.objects.filter(Cuenta="Caja").last().Cuadre
+    techo = (ahorros * 0.3) * -1
+    sobrante = caja - float(prest.Monto)
+    if sobrante <= 0 or sobrante < techo:
+            messages.error(request, "No se puede prestar esa cantidad, no hay dinero suficiente en caja")
+            return render(request,'transactions/Prestamos_mostrar.html')
+
     coutas = Temp_Acciones_Prestamos.objects.filter(Usuario=request.user.username)
     num_cuota = int(prest.plazo_meses)
     desc= Temp_Acciones_Prestamos.Descuento

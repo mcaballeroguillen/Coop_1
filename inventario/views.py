@@ -3,6 +3,7 @@ from django.views.generic import  TemplateView, ListView
 from prestamos.models import Variables_Generales
 from django.contrib import  messages
 from .models import Temp_Inventario, Inventario
+from core.models import Libro_Diario, Libro_Mayor
 from datetime import  date
 # Create your views here.
 
@@ -45,6 +46,9 @@ class Nuevo(TemplateView):
                 Valor= float(request.POST['Valor'])
             )
             A1.save()
+
+
+
             return  redirect("inventario:mostrar")
         else:
             return  render(request,"inventario/Nuevo Articulo.html")
@@ -73,6 +77,29 @@ class Mostrar(ListView):
             Valor=Datos.Valor
         )
         A1.save()
+        M1 = Libro_Diario(
+            Usuario=self.request.user.username,
+            Fecha=date.today(),
+            Descripcion="Ingreso a inventario: " + Datos.Descripcion,
+            Debe="Inventario: +" + str(Datos.Valor),
+            Haber=" ",
+            Cuadre=Datos.Valor
+        )
+        M1.save()
+        saldo_inventario = 0.0
+        c = Libro_Mayor.objects.filter(Cuenta="Inventario")
+        if c.count() > 0:
+            saldo_inventario = c.last().Cuadre
+
+        M2 = Libro_Mayor(
+            Cuenta="Inventario",
+            Debe=Datos.Valor,
+            Haber=0.0,
+            Cuadre=saldo_inventario + Datos.Valor,
+            Fecha=date.today(),
+            Descripcion=Datos.Descripcion
+        )
+        M2.save()
 
         return  redirect("usuarios:Libro Diario")
 

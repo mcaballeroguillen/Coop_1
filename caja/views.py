@@ -5,6 +5,7 @@ from .models import Temp_Caja, Caja
 from datetime import  date, timedelta
 from core.models import Libro_Diario, Libro_Mayor
 from prestamos.models import Variables_Generales
+from inventario.models import Inventario
 
 # Create your views here.
 
@@ -24,8 +25,10 @@ class Nuevo_Accion(TemplateView):
         cantidad = request.POST['Cantidad']
         cantidad =str(cantidad)
         Tipo = request.POST['Descrpción']
-        caja = Variables_Generales.objects.get(variable="Caja")
-        Saldo_Caja = float(caja.valor)
+        caja=0.0
+        if Libro_Mayor.objects.filter(Cuenta="Caja").count()>0:
+            caja = Libro_Mayor.objects.filter(Cuenta="Caja").last().Cuadre
+        Saldo_Caja = float(caja)
 
         if cantidad.isdigit():
           cantidad = float(cantidad)
@@ -40,56 +43,92 @@ class Nuevo_Accion(TemplateView):
         N_Recibo = request.POST['Núm. Recibo']
         N_Recibo = str(N_Recibo)
 
+        if Tipo=="Compras":
+
+
+            if request.POST['Código'] is None:
+                messages.error(request,"Código es necesario")
+                return  False
+
+            if request.POST['Descripción_1'] is None:
+                messages.error(request,"Descripción del artículo es necesario ")
+                return  False
         if N_Recibo.isdigit():
             return True
         else:
             return False
+
+
+
+
+
+
 
     def post(self,request,*args,**kwargs):
         v= self.Valdación(request)
 
         if v== True:
             cantidad = float(request.POST['Cantidad'])
-            N_recibo = int(request.POST['Núm. Recibo'])
-            #caja = Variables_Generales.objects.get(variable="Caja")
+
             caja=0.0
-            Saldo_Caja =  float(caja.valor)
+            if Libro_Mayor.objects.filter(Cuenta="Caja").count()>0:
+                caja = Libro_Mayor.objects.filter(Cuenta="Caja").last().Cuadre
+
+            Saldo_Caja =  caja
             Tipo = request.POST['Descrpción']
             Temp_Caja.objects.filter(Usuario=self.request.user.username).delete()
+            N_recibo = int(request.POST['Núm. Recibo'])
             if Tipo=='Ban.Ingreso':
                 A1 = Temp_Caja(
                     Usuario=self.request.user.username,
                     Num_Recibo=N_recibo,
-                    Descripción="Ingreso desde el Banco",
+                    Descripción="Depósito de Banco a Caja",
                     Entrada=cantidad,
                     Salida=0.0,
                     Saldo=round(Saldo_Caja+cantidad,2)
                 )
                 A1.save()
 
-                caja.valor = str(round(Saldo_Caja+cantidad))
+                Saldo_Caja = str(round(Saldo_Caja+cantidad))
             if Tipo=="Ban.Retiro":
                 A1 = Temp_Caja(
                     Usuario=self.request.user.username,
                     Num_Recibo=N_recibo,
-                    Descripción="Retiro hacia el Banco",
+                    Descripción="Retiro de Caja a Banco",
                     Entrada=0.0,
                     Salida=cantidad,
                     Saldo=round(Saldo_Caja - cantidad, 2)
                 )
                 A1.save()
-                caja.valor = str(round(Saldo_Caja - cantidad))
+
             if Tipo=="Viaticos":
                 A1 = Temp_Caja(
                     Usuario=self.request.user.username,
                     Num_Recibo=N_recibo,
-                    Descripción="Viaticos",
+                    Descripción=request.POST['Detalle'],
                     Entrada=0.0,
                     Salida=cantidad,
                     Saldo=round(Saldo_Caja - cantidad, 2)
                 )
                 A1.save()
-                caja.valor = str(round(Saldo_Caja - cantidad))
+
+            if Tipo=="Compras":
+                A1 = Temp_Caja(
+                    Usuario=self.request.user.username,
+                    Num_Recibo=N_recibo,
+                    Descripción=request.POST['Detalle'],
+                    Entrada=0.0,
+                    Salida=cantidad,
+                    Saldo=round(Saldo_Caja - cantidad, 2)
+                )
+                A1.save()
+                A2 = Inventario(
+                    Codigo=request.POST['Código'],
+                    Descripcion=request.POST['Descripción_1'],
+                    Fecha_Ingreso = date.today(),
+                    Valor= cantidad
+                )
+                A2.save()
 
             Movimiento = Temp_Caja.objects.get(Usuario=self.request.user.username)
 
@@ -103,7 +142,7 @@ class Nuevo_Accion(TemplateView):
             )
             A1.save()
 #Libros
-            if Movimiento.Descripción=="Ingreso desde el Banco":
+            if Tipo=='Ban.Ingreso':
                 M1 = Libro_Diario(
                     Usuario=self.request.user,
                     Fecha=date.today(),
@@ -140,7 +179,7 @@ class Nuevo_Accion(TemplateView):
                 )
                 M3.save()
 
-            if Movimiento.Descripción=="Retiro hacia el Banco":
+            if Tipo=="Ban.Retiro":
                 M1 = Libro_Diario(
                     Usuario=self.request.user,
                     Fecha=date.today(),
@@ -177,22 +216,22 @@ class Nuevo_Accion(TemplateView):
                 )
                 M3.save()
 
-            if Movimiento.Descripción=="Viaticos":
+            if Tipo=="Viaticos":
                 M1 = Libro_Diario(
                     Usuario=self.request.user,
                     Fecha=date.today(),
                     Descripcion=Movimiento.Descripción,
-                    Debe="Viaticos: +" + str(Movimiento.Salida),
+                    Debe="Gastos: +" + str(Movimiento.Salida),
                     Haber="Caja: - " + str(Movimiento.Salida),
                     Cuadre=0.0
                 )
                 M1.save()
-                c1 = Libro_Mayor.objects.filter(Cuenta="Viaticos").count()
+                c1 = Libro_Mayor.objects.filter(Cuenta="Gastos").count()
                 banco_saldo=0
                 if c1>0:
-                    banco_saldo=Libro_Mayor.objects.filter(Cuenta="Viaticos").last().Cuadre
+                    banco_saldo=Libro_Mayor.objects.filter(Cuenta="Gastos").last().Cuadre
                 M2 = Libro_Mayor(
-                    Cuenta="Viaticos",
+                    Cuenta="Gastos",
                     Debe=Movimiento.Salida,
                     Haber= 0.0,
                     Fecha=date.today(),
@@ -213,9 +252,42 @@ class Nuevo_Accion(TemplateView):
                     Descripcion=Movimiento.Descripción,
                 )
                 M3.save()
-            caja.save()
-
-
+            if Tipo == "Compras":
+                M1  = Libro_Diario(
+                    Usuario= self.request.user,
+                    Fecha=date.today(),
+                    Descripcion=Movimiento.Descripción,
+                    Debe="Inventario: +" + str(Movimiento.Salida),
+                    Haber="Caja: - " + str(Movimiento.Salida),
+                    Cuadre=0.0
+                )
+                M1.save()
+                c2 = Libro_Mayor.objects.filter(Cuenta="Caja").count()
+                caja_saldo=0.0
+                if c2 > 0:
+                    caja_saldo = Libro_Mayor.objects.filter(Cuenta="Caja").last().Cuadre
+                M2 = Libro_Mayor(
+                    Cuenta="Caja",
+                    Debe=0.0,
+                    Haber=Movimiento.Salida,
+                    Fecha=date.today(),
+                    Cuadre=Saldo_Caja-Movimiento.Salida,
+                    Descripcion= Movimiento.Descripción,
+                )
+                M2.save()
+                inventario_saldo=0.0
+                c3 = Libro_Mayor.objects.filter(Cuenta="Inventario")
+                if c3.count()>0:
+                    inventario_saldo= c3.last().Cuadre
+                M3  = Libro_Mayor(
+                    Cuenta="Inventario",
+                    Debe=Movimiento.Salida,
+                    Haber=0.0,
+                    Fecha=date.today(),
+                    Cuadre=inventario_saldo+Movimiento.Salida,
+                    Descripcion= Movimiento.Descripción
+                )
+                M3.save()
 
             return redirect('caja:mostrar')
 

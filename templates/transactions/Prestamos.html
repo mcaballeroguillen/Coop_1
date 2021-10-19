@@ -57,6 +57,7 @@
                Monto
             </label>
             <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight border rounded-md border-gray-500 focus:outline-none focus:shadow-outline" name="Monto" id="Monto"   type="number"  required placeholder="Monto del Préstamo">
+            <input type="hidden" name="next" value="{{ request.path }}">
         </div>
         {% if messages %}
             <ul class="messages">
