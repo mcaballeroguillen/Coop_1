@@ -13,6 +13,10 @@ from prestamos.utils import render_to_pdf
 from caja.models import Caja
 
 def Prestamos(request):
+    if Temp_Datos_prestamos.objects.all().count()>0:
+        messages.error(request,'Se está ejecutando otro prestamo')
+        return  render(request,'transactions/Index.html')
+
     if request.method=="POST":
         if validacion_datos(request):
             Temp_Datos_prestamos.objects.all().delete()
@@ -35,9 +39,12 @@ def Prestamos(request):
 
 
 class Inicio(TemplateView):
+    Temp_Datos_prestamos.objects.all().delete()
     template_name='transactions/Index.html'
 
 def validacion_datos(request):
+
+
     id = request.POST['Identidad']
     if len(id) != 13:
         messages.error(request, "Error en Identidad", "Debe medir 13")
@@ -66,7 +73,7 @@ def validacion_datos(request):
         messages.error(request,"Error en Periodo de Gracia")
         return False
     else:
-        if int(gracia)<=0 or int(gracia)>=int(plazo):
+        if int(gracia)<0 or int(gracia)>=int(plazo):
             messages.error(request,"Error en Periodo de Gracia")
             return False
 
@@ -76,7 +83,8 @@ def validacion_datos(request):
         messages.error(request,"Error en monto")
         return False
     else:
-        ahorros = Libro_Mayor.objects.filter(Cuenta="Ahorros_Personas").last().Cuadre
+
+        ahorros = Libro_Mayor.objects.filter(Cuenta="Capital_e_intereses_en_ahorros").last().Cuadre
         caja = Libro_Mayor.objects.filter(Cuenta="Caja").last().Cuadre
         techo =(ahorros*0.3)*-1
 
@@ -165,10 +173,10 @@ def generar_cuotas(request):
             num_cuota=x+1,
             fecha_cuota=fecha_cuota,
             Descuento=0,
-            capital= capital_cuota,
-            Intereses= interes,
+            capital= round(capital_cuota,2),
+            Intereses= round(interes,2),
             total_cuota= round(capital_cuota+interes,2),
-            saldo=saldo
+            saldo=round(saldo,2)
 
         )
 
@@ -216,15 +224,15 @@ class mostra_prestamp(ListView):
             'Cliente': prest.nombre_cliente,
             'Identidad': prest.id_persona,
             'Fecha_O': prest.fecha_otorgado,
-            'Plazo': prest.plazo_meses,
-            'Tanual': prest.taza_mensual*12,
-            'Tmensual': prest.taza_mensual,
+            'Plazo': (prest.plazo_meses),
+            'Tanual': (prest.taza_mensual*12)*100,
+            'Tmensual': (prest.taza_mensual)*100,
             'Pgracia': prest.Periodo_Gracia,
             'Descuento': prest.Taza_Descuento,
             'Monto':prest.Monto,
             'Intereses': prest.Intereses,
 
-            'Mora': Variables_Generales.objects.get(variable="Interes_mora").valor
+            'Mora': float(Variables_Generales.objects.get(variable="Interes_mora").valor)*1000
 
         })
         return  context
@@ -254,7 +262,18 @@ class GeneratePdf(View):
 
         }
         pdf = render_to_pdf('pdf/prestamo_pdf.html', context)
-        return HttpResponse(pdf, content_type='prestamos/pdf')
+        if pdf:
+            response = HttpResponse(pdf, content_type='prestamos/pdf')
+            filename = "Prestamo_%s.pdf" % (prest.nombre_cliente)
+            content = "inline; filename=%s" % (filename)
+            download = request.GET.get("download")
+            if download:
+                content = "attachment; filename=%s" % (filename)
+            response['Content-Disposition'] = content
+            return response
+        return HttpResponse("Not found")
+
+
 
 def Guardar(request):
 
@@ -572,7 +591,7 @@ class Prestamo_A_Pagar(ListView):
     def get_queryset(self):
         datos = Temp_Acciones_Prestamos.objects.filter(Usuario=self.request.user.username)
         id_p = datos.last().num_cuota
-        return Acciones_Prestamos.objects.filter(id_prestamo=id_p)
+        return Acciones_Prestamos.objects.filter(id_prestamo=id_p).order_by('num_cuota')
 
     def post(self, request, *args, **kwargs):
         datos = Temp_Acciones_Prestamos.objects.filter(Usuario=self.request.user.username)
@@ -603,7 +622,7 @@ class Prestamo_A_Pagar(ListView):
         datos = Temp_Acciones_Prestamos.objects.filter(Usuario=self.request.user.username)
         id_p = datos.last().num_cuota
         datos_prestamo = Datos_prestamos.objects.get(id_prestamo=id_p)
-        ob = Acciones_Prestamos.objects.filter(id_prestamo=id_p)
+        ob = Acciones_Prestamos.objects.filter(id_prestamo=id_p).order_by('num_cuota')
         context = {
             'Cliente': datos_prestamo.nombre_cliente,
             'Identidad': datos_prestamo.id_cliente,
@@ -804,4 +823,13 @@ class GeneratePdf1(View):
 
         }
         pdf = render_to_pdf('pdf/prestamo_con_pagos.html', context)
-        return HttpResponse(pdf, content_type='prestamos/pdf')
+        if pdf:
+            response = HttpResponse(pdf, content_type='prestamos/pdf')
+            filename = "Prestamo_%s.pdf" % (datos_prestamo.nombre_cliente)
+            content = "inline; filename=%s" % (filename)
+            download = request.GET.get("download")
+            if download:
+                content = "attachment; filename=%s" % (filename)
+            response['Content-Disposition'] = content
+            return response
+        return HttpResponse("Not found")

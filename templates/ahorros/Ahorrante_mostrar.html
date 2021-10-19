@@ -37,6 +37,12 @@
         <a href="{% url 'ahorros:guardar' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">
                     Guardar
          </a>
+         <button onclick="Atrás()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Atrás</button>
+        <script>
+        function Atrás() {
+            window.history.back();
+        }
+</script>
     <table class="table-auto mx-auto w-full mt-8">
         <thead class="bg-gray-800 text-white">
         <tr class="uppercase font-semibold text-sm">

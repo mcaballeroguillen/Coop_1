@@ -22,8 +22,14 @@ class Crear_Cuenta (TemplateView):
         if len(identidad) != 13:
             messages.error(request, "Error en Identidad", "Debe medir 13")
             return False
-        dep = float(request.POST['Déposito Inicial'])
-        if dep<=0:
+        dep_inicial= request.POST['Déposito Inicial']
+        dep_inicial= str(dep_inicial)
+        if dep_inicial.isdigit():
+            dep = float(request.POST['Déposito Inicial'])
+            if dep <= 0:
+                messages.error(request, "Error en Déposito Inicial", "Debe medir 13")
+                return False
+        else:
             messages.error(request, "Error en Déposito Inicial", "Debe medir 13")
             return False
         c= Datos_Ahorros.objects.filter(Identidad=identidad).count()
@@ -106,7 +112,17 @@ class generar_pdf(View):
             'object_list': ob
         }
         pdf= render_to_pdf('pdf/ahorros_mostrar.html',ctx)
-        return HttpResponse(pdf, content_type='ahorros/pdf')
+        if pdf:
+            response = HttpResponse(pdf, content_type='ahorros/pdf')
+            filename = "Ahorros_%s.pdf" % (dato.Nombre)
+            content = "inline; filename=%s" % (filename)
+            download = request.GET.get("download")
+            if download:
+                content = "attachment; filename=%s" % (filename)
+            response['Content-Disposition'] = content
+            return response
+        return HttpResponse("Not found")
+
 
 def guardar(request):
      datos = Temp_Datos_Ahorrante.objects.get(usuario=request.user.username)
@@ -137,17 +153,17 @@ def guardar(request):
              Usuario=request.user.username,
              Fecha=date.today(),
              Descripcion= "Retiro de "+ Nombre,
-             Debe= "Ahorros_Personas +" + str(accion.Retiro),
+             Debe= "Capital_e_intereses_en_ahorros +" + str(accion.Retiro),
              Haber= "Caja -" + str(accion.Retiro),
              Cuadre= 0.0
 
          )
          M1.save()
 
-         c = Libro_Mayor.objects.filter(Cuenta="Ahorros_Personas").count()
+         c = Libro_Mayor.objects.filter(Cuenta="Capital_e_intereses_en_ahorros").count()
          if c==0:
              M2 = Libro_Mayor(
-                 Cuenta="Ahorros_Personas",
+                 Cuenta="Capital_e_intereses_en_ahorros",
                  Debe=float(accion.Retiro),
                  Haber=0.0,
                  Cuadre=-float(accion.Retiro),
@@ -156,9 +172,9 @@ def guardar(request):
              )
              M2.save()
          else:
-            cuadre = Libro_Mayor.objects.filter(Cuenta="Ahorros_Personas").last().Cuadre
+            cuadre = Libro_Mayor.objects.filter(Cuenta="Capital_e_intereses_en_ahorros").last().Cuadre
             M2 = Libro_Mayor(
-                Cuenta="Ahorros_Personas",
+                Cuenta="Capital_e_intereses_en_ahorros",
                 Debe=float(accion.Retiro),
                 Haber=0.0,
                 Cuadre=cuadre+float(accion.Retiro),
@@ -195,16 +211,16 @@ def guardar(request):
              Fecha=date.today(),
              Descripcion="Depósito Ahorros " + Nombre,
              Debe= "Caja +" + str(accion.Deposito),
-             Haber="Ahorros_Personas -" + str(accion.Deposito),
+             Haber="Capital_e_intereses_en_ahorros -" + str(accion.Deposito),
              Cuadre=0.0
 
          )
          M1.save()
 
-         c = Libro_Mayor.objects.filter(Cuenta="Ahorros_Personas").count()
+         c = Libro_Mayor.objects.filter(Cuenta="Capital_e_intereses_en_ahorros").count()
          if c == 0:
              M2 = Libro_Mayor(
-                 Cuenta="Ahorros_Personas",
+                 Cuenta="Capital_e_intereses_en_ahorros",
                  Debe=0.0,
                  Haber=float(accion.Deposito),
                  Cuadre=-float(accion.Deposito),
@@ -213,9 +229,9 @@ def guardar(request):
              )
              M2.save()
          else:
-             cuadre = Libro_Mayor.objects.filter(Cuenta="Ahorros_Personas").last().Cuadre
+             cuadre = Libro_Mayor.objects.filter(Cuenta="Capital_e_intereses_en_ahorros").last().Cuadre
              M2 = Libro_Mayor(
-                 Cuenta="Ahorros_Personas",
+                 Cuenta="Capital_e_intereses_en_ahorros",
                  Debe=0.0,
                  Haber=float(accion.Deposito),
                  Cuadre=cuadre - float(accion.Deposito),
@@ -350,7 +366,7 @@ class Mostrar_Temp_1(ListView):
                 Fecha=date.today(),
                 Descripcion="Depósito Ahorros " + Nombre,
                 Debe= "Caja: +" + str(cantidad_accion),
-                Haber= "Ahorros_Personas:-" +str(cantidad_accion),
+                Haber= "Capital_e_intereses_en_ahorros:-" +str(cantidad_accion),
                 Cuadre=0.0
             )
             M1.save()
@@ -373,9 +389,9 @@ class Mostrar_Temp_1(ListView):
                 Saldo=cuadre+cantidad_accion
             )
             M4.save()
-            cuadre = Libro_Mayor.objects.filter(Cuenta="Ahorros_Personas").last().Cuadre
+            cuadre = Libro_Mayor.objects.filter(Cuenta="Capital_e_intereses_en_ahorros").last().Cuadre
             M3 = Libro_Mayor(
-                Cuenta="Ahorros_Personas",
+                Cuenta="Capital_e_intereses_en_ahorros",
                 Debe=0.0,
                 Haber= cantidad_accion,
                 Cuadre=cuadre-cantidad_accion,
@@ -414,7 +430,7 @@ class Mostrar_Temp_1(ListView):
                     Usuario=request.user.username,
                     Fecha=date.today(),
                     Descripcion="Retiro Ahorros: " + Nombre,
-                    Debe= "Ahorros_Personas: +" + str(cantidad_accion),
+                    Debe= "Capital_e_intereses_en_ahorros: +" + str(cantidad_accion),
                     Haber = "Caja: -" + str(cantidad_accion),
                     Cuadre=0.0
                 )
@@ -438,9 +454,9 @@ class Mostrar_Temp_1(ListView):
                     Saldo=cuadre-cantidad_accion
                 )
                 M4.save()
-                cuadre= Libro_Mayor.objects.filter(Cuenta="Ahorros_Personas").last().Cuadre
+                cuadre= Libro_Mayor.objects.filter(Cuenta="Capital_e_intereses_en_ahorros").last().Cuadre
                 M3 = Libro_Mayor(
-                    Cuenta="Ahorros_Personas",
+                    Cuenta="Capital_e_intereses_en_ahorros",
                     Debe=cantidad_accion,
                     Haber=0.0,
                     Fecha=date.today(),

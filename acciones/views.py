@@ -127,7 +127,19 @@ class generar_pdf(View):
             'object_list': ob
         }
         pdf= render_to_pdf('pdf/acciones_mostrar.html',ctx)
-        return HttpResponse(pdf, content_type='acciones/pdf')
+        if pdf:
+            response = HttpResponse(pdf, content_type='acciones/pdf')
+            filename = "Aportaciones_%s.pdf" % (presta.Nombre)
+            content = "inline; filename=%s" % (filename)
+            download = request.GET.get("download")
+            if download:
+                content = "attachment; filename=%s" % (filename)
+            response['Content-Disposition'] = content
+            return response
+        return HttpResponse("Not found")
+
+
+
 
 def guardar(request):
     datos_accionista = Temp_Datos_Accionista.objects.get(Usuario=request.user.username)
@@ -160,32 +172,32 @@ def guardar(request):
     M1 = Libro_Diario(
         Usuario=request.user.username,
         Fecha=date.today(),
-        Descripcion="Depósito Acciones: "+ Nombre,
+        Descripcion="Depósito Aportaciones: "+ Nombre,
         Debe= "Caja: +" + str(cantidad_movimiento),
-        Haber="Acciones_Miembros: -" + str(cantidad_movimiento),
+        Haber="Aportaciones_Miembros: -" + str(cantidad_movimiento),
         Cuadre=0.0
     )
     M1.save()
-    c = Libro_Mayor.objects.filter(Cuenta="Acciones_Miembros").count()
+    c = Libro_Mayor.objects.filter(Cuenta="Aportaciones_Miembros").count()
     if c==0:
         M2 = Libro_Mayor(
-            Cuenta="Acciones_Miembros",
+            Cuenta="Aportaciones_Miembros",
             Debe=0.0,
             Haber=cantidad_movimiento,
             Fecha=date.today(),
             Cuadre=-cantidad_movimiento,
-            Descripcion="Depósito Acciones: "+ Nombre
+            Descripcion="Depósito Aportaciones: "+ Nombre
         )
         M2.save()
     else:
-        cuadre = Libro_Mayor.objects.filter(Cuenta="Acciones_Miembros").last().Cuadre
+        cuadre = Libro_Mayor.objects.filter(Cuenta="Aportaciones_Miembros").last().Cuadre
         M2 = Libro_Mayor(
-            Cuenta="Acciones_Miembros",
+            Cuenta="Aportaciones_Miembros",
             Debe=0.0,
             Haber=cantidad_movimiento,
             Fecha=date.today(),
             Cuadre=cuadre-cantidad_movimiento,
-            Descripcion="Depósito Acciones: " + Nombre
+            Descripcion="Depósito Aportaciones: " + Nombre
         )
         M2.save()
     cuadre_caja=0.0
@@ -198,7 +210,7 @@ def guardar(request):
         Haber=0.0,
         Cuadre=cuadre_caja+cantidad_movimiento,
         Fecha=date.today(),
-        Descripcion="Depósito Acciones: " + Nombre
+        Descripcion="Depósito Aportaciones: " + Nombre
 
 
     )
@@ -206,7 +218,7 @@ def guardar(request):
     M4 = Caja(
         Fecha=date.today(),
         Num_Recibo=acciones_accionista.Num_Recibo,
-        Descripción="Depósito Acciones: " + Nombre,
+        Descripción="Depósito Aportaciones: " + Nombre,
         Entrada=cantidad_movimiento,
         Salida=0.0,
         Saldo=cuadre_caja+cantidad_movimiento,
@@ -342,20 +354,20 @@ class Mostrar_temp_1(ListView):
             M1 = Libro_Diario(
                 Usuario= request.user.username,
                 Fecha=date.today(),
-                Descripcion= "Depósito Acciones: " + Nombre,
+                Descripcion= "Depósito Aportaciones: " + Nombre,
                 Debe= "Caja: +" + str(cantidad),
-                Haber="Acciones_Miembros: -" + str(cantidad),
+                Haber="Aportaciones_Miembros: -" + str(cantidad),
                 Cuadre=0.0
             )
             M1.save()
-            cuadre = Libro_Mayor.objects.filter(Cuenta="Acciones_Miembros").last().Cuadre
+            cuadre = Libro_Mayor.objects.filter(Cuenta="Aportaciones_Miembros").last().Cuadre
             M2 = Libro_Mayor(
-                Cuenta="Acciones_Miembros",
+                Cuenta="Aportaciones_Miembros",
                 Debe=0.0,
                 Haber=cantidad,
                 Fecha=date.today(),
                 Cuadre=cuadre-cantidad,
-                Descripcion="Depósito Acciones: " + Nombre
+                Descripcion="Depósito Aportaciones: " + Nombre
             )
             M2.save()
             cuadre = Libro_Mayor.objects.filter(Cuenta="Caja").last().Cuadre
@@ -365,14 +377,14 @@ class Mostrar_temp_1(ListView):
                 Haber=0.0,
                 Fecha=date.today(),
                 Cuadre=cuadre+cantidad,
-                Descripcion="Depósito Acciones: " + Nombre,
+                Descripcion="Depósito Aportaciones: " + Nombre,
             )
             M3.save()
 
             M4 = Caja(
                 Fecha=date.today(),
                 Num_Recibo=recibo,
-                Descripción="Depósito Acciones: " + Nombre,
+                Descripción="Depósito Aportaciones: " + Nombre,
                 Entrada=cantidad,
                 Salida=0.0,
                 Saldo=cuadre+cantidad
@@ -413,20 +425,20 @@ class Mostrar_temp_1(ListView):
             M1 = Libro_Diario(
                 Usuario=request.user.username,
                 Fecha=date.today(),
-                Descripcion="Depósito Acciones: " + Nombre,
+                Descripcion="Depósito Aportaciones: " + Nombre,
                 Debe="Caja: +" + str(cantidad),
-                Haber="Acciones_Miembros: -" + str(cantidad),
+                Haber="Aportaciones_Miembros: -" + str(cantidad),
                 Cuadre=0.0
             )
             M1.save()
-            cuadre = Libro_Mayor.objects.filter(Cuenta="Acciones_Miembros").last().Cuadre
+            cuadre = Libro_Mayor.objects.filter(Cuenta="Aportaciones_Miembros").last().Cuadre
             M2 = Libro_Mayor(
-                Cuenta="Acciones_Miembros",
+                Cuenta="Aportaciones_Miembros",
                 Debe=0.0,
                 Haber=cantidad,
                 Fecha=date.today(),
                 Cuadre=cuadre - cantidad,
-                Descripcion="Depósito Acciones: " + Nombre
+                Descripcion="Depósito Aportaciones: " + Nombre
             )
             M2.save()
             cuadre = Libro_Mayor.objects.filter(Cuenta="Caja").last().Cuadre
@@ -436,13 +448,13 @@ class Mostrar_temp_1(ListView):
                 Haber=0.0,
                 Fecha=date.today(),
                 Cuadre=cuadre + cantidad,
-                Descripcion="Depósito Acciones: " + Nombre,
+                Descripcion="Depósito Aportaciones: " + Nombre,
             )
             M3.save()
             M4 = Caja(
                 Fecha=date.today(),
                 Num_Recibo=recibo,
-                Descripción="Depósito Acciones: " + Nombre,
+                Descripción="Depósito Aportaciones: " + Nombre,
                 Entrada=cantidad,
                 Salida=0.0,
                 Saldo=cuadre + cantidad
@@ -482,20 +494,20 @@ class Mostrar_temp_1(ListView):
             M1 = Libro_Diario(
                 Usuario=request.user.username,
                 Fecha=date.today(),
-                Descripcion="Depósito Acciones: " + Nombre,
+                Descripcion="Depósito Aportaciones: " + Nombre,
                 Debe="Caja: +" + str(cantidad),
-                Haber="Acciones_Miembros: -" + str(cantidad),
+                Haber="Aportaciones_Miembros: -" + str(cantidad),
                 Cuadre=0.0
             )
             M1.save()
-            cuadre = Libro_Mayor.objects.filter(Cuenta="Acciones_Miembros").last().Cuadre
+            cuadre = Libro_Mayor.objects.filter(Cuenta="Aportaciones_Miembros").last().Cuadre
             M2 = Libro_Mayor(
-                Cuenta="Acciones_Miembros",
+                Cuenta="Aportaciones_Miembros",
                 Debe=0.0,
                 Haber=cantidad,
                 Fecha=date.today(),
                 Cuadre=cuadre - cantidad,
-                Descripcion="Depósito Acciones: " + Nombre
+                Descripcion="Depósito Aportaciones: " + Nombre
             )
             M2.save()
             cuadre = Libro_Mayor.objects.filter(Cuenta="Caja").last().Cuadre
@@ -505,13 +517,13 @@ class Mostrar_temp_1(ListView):
                 Haber=0.0,
                 Fecha=date.today(),
                 Cuadre=cuadre + cantidad,
-                Descripcion="Depósito Acciones: " + Nombre,
+                Descripcion="Depósito Aportaciones: " + Nombre,
             )
             M3.save()
             M4 = Caja(
                 Fecha=date.today(),
                 Num_Recibo=recibo,
-                Descripción="Depósito Acciones: " + Nombre,
+                Descripción="Depósito Aportaciones: " + Nombre,
                 Entrada=cantidad,
                 Salida=0.0,
                 Saldo=cuadre + cantidad
@@ -554,20 +566,20 @@ class Mostrar_temp_1(ListView):
             M1 = Libro_Diario(
                 Usuario=request.user.username,
                 Fecha=date.today(),
-                Descripcion="Retiro Acciones: " + Nombre,
-                Debe="Acciones_Miembros: +" + str(cantidad),
+                Descripcion="Retiro Aportaciones: " + Nombre,
+                Debe="Aportaciones_Miembros: +" + str(cantidad),
                 Haber="Caja: -" + str(cantidad),
                 Cuadre=0.0
             )
             M1.save()
-            cuadre = Libro_Mayor.objects.filter(Cuenta="Acciones_Miembros").last().Cuadre
+            cuadre = Libro_Mayor.objects.filter(Cuenta="Aportaciones_Miembros").last().Cuadre
             M2 = Libro_Mayor(
-                Cuenta="Acciones_Miembros",
+                Cuenta="Aportaciones_Miembros",
                 Debe=cantidad,
                 Haber=0.0,
                 Fecha=date.today(),
                 Cuadre=cuadre + cantidad,
-                Descripcion="Retiro Acciones: " + Nombre
+                Descripcion="Retiro Aportaciones: " + Nombre
             )
             M2.save()
             cuadre = Libro_Mayor.objects.filter(Cuenta="Caja").last().Cuadre
@@ -577,7 +589,7 @@ class Mostrar_temp_1(ListView):
                 Haber=cantidad,
                 Fecha=date.today(),
                 Cuadre=cuadre - cantidad,
-                Descripcion="Retiro Acciones: " + Nombre,
+                Descripcion="Retiro Aportaciones: " + Nombre,
             )
             M3.save()
 
