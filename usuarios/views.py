@@ -82,6 +82,7 @@ class Balance_General_view(TemplateView):
         Balance_General.objects.all().delete()
         t_activos=0.0
         for cuenta in activos:
+
             saldo = round(Libro_Mayor.objects.filter(Cuenta=cuenta).last().Cuadre,2)
             A = Balance_General(
                 Cuenta= cuenta,
@@ -102,16 +103,18 @@ class Balance_General_view(TemplateView):
         A.save()
         t_pasivo=0.0
         for cuenta in pasivos:
-            saldo = round(Libro_Mayor.objects.filter(Cuenta=cuenta).last().Cuadre,2)
-            P = Balance_General(
-                Cuenta=cuenta,
-                Activo=0.0,
-                Pasivo=0.0,
-                Saldo=(saldo),
-                Total=0.0
-            )
-            P.save()
-            t_pasivo = t_pasivo+saldo
+            if cuenta != "Aportaciones_Miembros":
+                saldo = round(Libro_Mayor.objects.filter(Cuenta=cuenta).last().Cuadre, 2)
+                P = Balance_General(
+                    Cuenta=cuenta,
+                    Activo=0.0,
+                    Pasivo=0.0,
+                    Saldo=(saldo),
+                    Total=0.0
+                )
+                P.save()
+                t_pasivo = t_pasivo + saldo
+
         P = Balance_General(
             Cuenta="Total Pasivo",
             Saldo=0.0,
@@ -120,12 +123,21 @@ class Balance_General_view(TemplateView):
             Total=0.0,
         )
         P.save()
-
+        Aportaciones = Libro_Mayor.objects.filter(Cuenta="Aportaciones_Miembros").last().Cuadre
+        Ganancias = t_pasivo+t_activos
         P = Balance_General(
-            Cuenta="Total Capita Contable",
+            Cuenta="Aportaciones",
             Saldo=0.0,
             Activo=0.0,
-            Total=round(t_activos+t_pasivo,2),
+            Total=round(Aportaciones,2),
+            Pasivo=0.0
+        )
+        P.save()
+        P = Balance_General(
+            Cuenta="Ganacias",
+            Saldo=0.0,
+            Activo=0.0,
+            Total=round(Ganancias),
             Pasivo=0.0
         )
         P.save()
