@@ -124,7 +124,7 @@ class Balance_General_view(TemplateView):
         )
         P.save()
         Aportaciones = Libro_Mayor.objects.filter(Cuenta="Aportaciones_Miembros").last().Cuadre
-        Ganancias = t_pasivo+t_activos
+        Ganancias = t_pasivo+t_activos+Aportaciones
         P = Balance_General(
             Cuenta="Aportaciones",
             Saldo=0.0,
