@@ -6,7 +6,7 @@ from datetime import  date, timedelta
 from core.models import Libro_Diario, Libro_Mayor
 from prestamos.models import Variables_Generales
 from inventario.models import Inventario
-
+from django.contrib.auth.decorators import login_required, permission_required
 # Create your views here.
 
 class Index(TemplateView):

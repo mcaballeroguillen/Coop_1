@@ -5,13 +5,14 @@ from datetime import datetime, date
 from datetime import timedelta
 from core.models import Libro_Diario, Libro_Mayor
 from django.views import View
-
+from django.contrib.auth.decorators import login_required, permission_required
 from prestamos.models import Temp_Datos_prestamos, Temp_Acciones_Prestamos, Datos_prestamos, Acciones_Prestamos, Variables_Generales
 from django.views.generic import TemplateView, RedirectView, ListView
 # Create your views here.
 from prestamos.utils import render_to_pdf
 from caja.models import Caja
 
+@permission_required('prestamos.add_acciones_prestamos')
 def Prestamos(request):
 
 
